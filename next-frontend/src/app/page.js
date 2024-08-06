@@ -5,7 +5,7 @@ import './page.style.css';
 const Home = () => {
   const [aptData, setAptData] = useState({ data: [] });
   const [modalData, setModalData] = useState(null);
-  const [isKuk, setIsKuk] = useState(false);
+  const [isKukMin, setIsKukMin] = useState(false);
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -21,13 +21,13 @@ const Home = () => {
   }, []);
 
   const handleButtonClick = (detailData,houseDtlSecdNm) => {
-    if (houseDtlSecdNm==="국민") setIsKuk(true)
+    if (houseDtlSecdNm==="국민") setIsKukMin(true)
     setModalData(detailData);    
   };
 
   const closeModal = () => {
     setModalData(null);
-    setIsKuk(false)
+    setIsKukMin(false)
   };
 
   return (
@@ -73,7 +73,7 @@ const Home = () => {
                   const localData = item.LOCAL_POINT || item.LOCAL_RAND_ZERO || item.LOCAL_RAND_ZERO_ONE;
                   const etcGGData = item.ETC_GG_POINT || item.ETC_GG_RAND_ZERO || item.ETC_GG_RAND_ZERO_ONE;
                   const etcData = item.ETC_POINT || item.ETC_RAND_ZERO || item.ETC_RAND_ZERO_ONE;
-                  if (isKuk){
+                  if (isKukMin){
                     return (
                       <table>
                       <tbody>
