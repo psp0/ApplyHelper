@@ -1,4 +1,3 @@
-// lib/api.js
 import axios from 'axios';
 
 export const fetchMainData = async () => {
