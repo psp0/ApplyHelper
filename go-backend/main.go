@@ -10,14 +10,18 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"time"
+	"sort"
 
 	"github.com/gorilla/handlers"
 	"github.com/joho/godotenv"
 )
 
 const (
-	externalMainAPI   = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail?page=1&perPage=100"
-	externalDetailAPI = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancMdl?page=1&perPage=100&cond%5BHOUSE_MANAGE_NO%3A%3AEQ%5D="
+	externalSELAPTMainAPI   = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail?page=1&perPage=100&cond%%5BSUBSCRPT_AREA_CODE_NM%%3A%%3AEQ%%5D=%%EC%%84%%9C%%EC%%9A%%B8&cond%%5BRCRIT_PBLANC_DE%%3A%%3AGTE%%5D=%s&cond%%5BRCRIT_PBLANC_DE%%3A%%3ALT%%5D=%s"
+	externalKYGAPTMainAPI  = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail?page=1&perPage=100&cond%%5BSUBSCRPT_AREA_CODE_NM%%3A%%3AEQ%%5D=%%EC%%9D%%B8%%EC%%B2%%9C&cond%%5BRCRIT_PBLANC_DE%%3A%%3AGTE%%5D=%s&cond%%5BRCRIT_PBLANC_DE%%3A%%3ALT%%5D=%s"
+	externalINCAPTMainAPI  = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail?page=1&perPage=100&cond%%5BSUBSCRPT_AREA_CODE_NM%%3A%%3AEQ%%5D=%%EA%%B2%%BD%%EA%%B8%%B0&cond%%5BRCRIT_PBLANC_DE%%3A%%3AGTE%%5D=%s&cond%%5BRCRIT_PBLANC_DE%%3A%%3ALT%%5D=%s"
+	externalAPTDetailAPI = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancMdl?page=1&perPage=100&cond%5BHOUSE_MANAGE_NO%3A%3AEQ%5D="
 )
 
 type ApiResponse struct {
@@ -28,8 +32,7 @@ type MainData struct {
 	HouseManageNo        string       `json:"HOUSE_MANAGE_NO"`
 	RcritPblancDe        string       `json:"RCRIT_PBLANC_DE"`
 	HouseDtlSecdNm       string       `json:"HOUSE_DTL_SECD_NM"`
-	SubscrptAreaCodeNm   string       `json:"SUBSCRPT_AREA_CODE_NM"`
-	RentSecdNm           string       `json:"RENT_SECD_NM"`
+	SubscrptAreaCodeNm   string       `json:"SUBSCRPT_AREA_CODE_NM"`	
 	HouseNm              string       `json:"HOUSE_NM"`
 	RceptEndde           string       `json:"RCEPT_ENDDE"`
 	SpecltRdnEarthAt     string       `json:"SPECLT_RDN_EARTH_AT"`
@@ -45,9 +48,9 @@ type DetailData struct {
 	LocalPoint       int    `json:"LOCAL_POINT"`
 	LocalRandZero    int    `json:"LOCAL_RAND_ZERO"`
 	LocalRandZeroOne int    `json:"LOCAL_RAND_ZERO_ONE"`
-	EtcGGPoint       int    `json:"ETC_GG_POINT"`
-	EtcGGRandZero    int    `json:"ETC_GG_RAND_ZERO"`
-	EtcGGRandZeroOne int    `json:"ETC_GG_RAND_ZERO_ONE"`
+	EtcKYGPoint       int    `json:"ETC_KYG_POINT"`
+	EtcKYGRandZero    int    `json:"ETC_KYG_RAND_ZERO"`
+	EtcKYGRandZeroOne int    `json:"ETC_KYG_RAND_ZERO_ONE"`
 	EtcPoint         int    `json:"ETC_POINT"`
 	EtcRandZero      int    `json:"ETC_RAND_ZERO"`
 	EtcRandZeroOne   int    `json:"ETC_RAND_ZERO_ONE"`
@@ -58,7 +61,8 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	http.HandleFunc("/data", getData)
+	http.HandleFunc("/getAPT", getAPTData)
+	http.HandleFunc("/getRemndrAPT", getRemndrAPTData)
 	corsHandler := handlers.CORS(
 		handlers.AllowedOrigins([]string{"*"}),
 		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
@@ -66,33 +70,84 @@ func main() {
 	)
 	log.Fatal(http.ListenAndServe(":8080", corsHandler(http.DefaultServeMux)))
 }
-
-func getData(w http.ResponseWriter, r *http.Request) {
+func getRemndrAPTData(w http.ResponseWriter, r *http.Request) {
+	
+}
+func getAPTData(w http.ResponseWriter, r *http.Request) {
 	serviceKey := os.Getenv("CHUNGYAK_INFO_API_KEY")
-	mainURL := fmt.Sprintf("%s&serviceKey=%s", externalMainAPI, serviceKey)
-
-	resp, err := http.Get(mainURL)
+	pages := 1 // Number of pages you want to go
+	startDate, endDate :=getDateRangeForPage(pages)		
+	selURL := fmt.Sprintf(externalSELAPTMainAPI+"&serviceKey=%s", startDate, endDate,serviceKey)
+	kygURL := fmt.Sprintf(externalKYGAPTMainAPI+"&serviceKey=%s", startDate, endDate,serviceKey)
+	incURL := fmt.Sprintf(externalINCAPTMainAPI+"&serviceKey=%s", startDate, endDate,serviceKey)
+	
+	selResp, err := http.Get(selURL)
 	if err != nil {
 		http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
 		return
 	}
-	defer resp.Body.Close()
+	defer selResp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	kygResp, err := http.Get(kygURL)
+	if err != nil {
+		http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
+		return
+	}
+	defer kygResp.Body.Close()
+
+	incResp, err := http.Get(incURL)
+	if err != nil {
+		http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
+		return
+	}
+	defer incResp.Body.Close()
+
+	selBody, err := ioutil.ReadAll(selResp.Body)
 	if err != nil {
 		http.Error(w, "Failed to read response body", http.StatusInternalServerError)
 		return
 	}
 
-	var apiResponse ApiResponse
-	if err := json.Unmarshal(body, &apiResponse); err != nil {
+	kygBody, err := ioutil.ReadAll(kygResp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response body", http.StatusInternalServerError)
+		return
+	}
+
+	incBody, err := ioutil.ReadAll(incResp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response body", http.StatusInternalServerError)
+		return
+	}	
+
+	var selApiResponse ApiResponse
+	if err := json.Unmarshal(selBody, &selApiResponse); err != nil {
 		http.Error(w, "Failed to parse JSON", http.StatusInternalServerError)
 		return
 	}
 
-	serviceKey = os.Getenv("CHUNGYAK_INFO_API_KEY")
+	var kygApiResponse ApiResponse
+	if err := json.Unmarshal(kygBody, &kygApiResponse); err != nil {
+		http.Error(w, "Failed to parse JSON", http.StatusInternalServerError)
+		return
+	}
+
+	var incApiResponse ApiResponse
+	if err := json.Unmarshal(incBody, &incApiResponse); err != nil {
+		http.Error(w, "Failed to parse JSON", http.StatusInternalServerError)
+		return
+	}
+
+	var apiResponse ApiResponse
+	apiResponse.Data = append(apiResponse.Data, selApiResponse.Data...)
+	apiResponse.Data = append(apiResponse.Data, kygApiResponse.Data...)
+	apiResponse.Data = append(apiResponse.Data, incApiResponse.Data...)
+	sort.Slice(apiResponse.Data, func(i, j int) bool {
+		return apiResponse.Data[i].RcritPblancDe > apiResponse.Data[j].RcritPblancDe
+	})
+
 	for i, item := range apiResponse.Data {
-		detailURL := fmt.Sprintf("%s%s&serviceKey=%s", externalDetailAPI, item.HouseManageNo, serviceKey)
+		detailURL := fmt.Sprintf("%s%s&serviceKey=%s", externalAPTDetailAPI, item.HouseManageNo, serviceKey)
 		if err := fetchDetailData(detailURL, &apiResponse.Data[i]); err != nil {
 			http.Error(w, "Failed to fetch detail data", http.StatusInternalServerError)
 			return
@@ -187,9 +242,9 @@ func assignLargeScaleValues(수도권공공주택지구, 투기과열지구, 타
 					detail.LocalRandZero = 랜덤무주택물량
 					detail.LocalRandZeroOne = 랜덤무주택일주택물량
 				} else if i == 1 {
-					detail.EtcGGPoint = 가점자물량
-					detail.EtcGGRandZero = 랜덤무주택물량
-					detail.EtcGGRandZeroOne = 랜덤무주택일주택물량
+					detail.EtcKYGPoint = 가점자물량
+					detail.EtcKYGRandZero = 랜덤무주택물량
+					detail.EtcKYGRandZeroOne = 랜덤무주택일주택물량
 				} else if i == 2 {
 					detail.EtcPoint = 가점자물량
 					detail.EtcRandZero = 랜덤무주택물량
@@ -289,4 +344,15 @@ func convertAndTrim(numberStr string) string {
     number = number / 10000
     number = math.Round(number*10) / 10
     return fmt.Sprintf("%.1f", number)
+}
+func getDateRangeForPage(page int) (string, string) {
+	currentDate := time.Now()
+
+	endDate := currentDate.AddDate(0, 0, -30*(page-1))
+	startDate := endDate.AddDate(0, 0, -29)
+
+	startDateStr := startDate.Format("2006-01-02")
+	endDateStr := endDate.Format("2006-01-02")
+
+	return startDateStr, endDateStr
 }

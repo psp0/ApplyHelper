@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react';
-import { fetchMainData } from '../../lib/api';
+import { fetchAPTData,fetchRemndrAPTData } from '../../lib/api';
 import './page.style.css'; 
 const Home = () => {
   const [aptData, setAptData] = useState({ data: [] });
@@ -9,8 +9,7 @@ const Home = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await fetchMainData();
-        console.log(data);
+        const data = await fetchAPTData();
         setAptData(data);
       } catch (error) {
         alert('Failed to fetch data');
@@ -71,7 +70,7 @@ const Home = () => {
      
                 {modalData.map((item, index) => {
                   const localData = item.LOCAL_POINT || item.LOCAL_RAND_ZERO || item.LOCAL_RAND_ZERO_ONE;
-                  const etcGGData = item.ETC_GG_POINT || item.ETC_GG_RAND_ZERO || item.ETC_GG_RAND_ZERO_ONE;
+                  const etcKYGData = item.ETC_KYG_POINT || item.ETC_KYG_RAND_ZERO || item.ETC_KYG_RAND_ZERO_ONE;
                   const etcData = item.ETC_POINT || item.ETC_RAND_ZERO || item.ETC_RAND_ZERO_ONE;
                   if (isKukMin){
                     return (
@@ -128,20 +127,20 @@ const Home = () => {
                           </tr>
                         </>
                       )}
-                      { etcGGData >0  && (
+                      { etcKYGData >0  && (
                         <>
                           <tr>
                             <td rowSpan="3">해당, 기타경기</td>
                             <td>高가점자</td>
-                            <td>{item.ETC_GG_POINT}</td>
+                            <td>{item.ETC_KYG_POINT}</td>
                           </tr>
                           <tr>
                             <td>랜덤 - 무주택</td>
-                            <td>{item.ETC_GG_RAND_ZERO}</td>
+                            <td>{item.ETC_KYG_RAND_ZERO}</td>
                           </tr>
                           <tr>
                             <td>랜덤 - 무주택,일주택</td>
-                            <td>{item.ETC_GG_RAND_ZERO_ONE}</td>
+                            <td>{item.ETC_KYG_RAND_ZERO_ONE}</td>
                           </tr>
                         </>
                       )}
@@ -149,10 +148,10 @@ const Home = () => {
                         <>
                           <tr>
                             {
-                              etcGGData >0 &&   <td rowSpan="3">해당, 기타경기, 기타</td>
+                              etcKYGData >0 &&   <td rowSpan="3">해당, 기타경기, 기타</td>
                             }
                             {
-                              etcGGData <= 0 &&  <td rowSpan="3">해당, 기타</td>
+                              etcKYGData <= 0 &&  <td rowSpan="3">해당, 기타</td>
                             }                            
                             <td>高가점자</td>
                             <td>{item.ETC_POINT}</td>
@@ -183,6 +182,7 @@ const Home = () => {
                     </p>
                   </div>
             {/* 만약 경쟁률 계산시 이를 고려해야함 */}
+            {/* 데이터 안에 RceptEndde는 이 경쟁률인지 아닌지를 파악하는 용도로 사용됨 */}
             {/* 물량확인 버튼, 날짜 넘어가면 경쟁률 확인 버튼 */}
           </div>
         </div>
