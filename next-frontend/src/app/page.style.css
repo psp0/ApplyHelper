@@ -92,5 +92,11 @@ button:hover {
   color: red;
   font-weight: bold;
 }
+.modal-title {
+  text-align: center;
+  font-size: 1.5em;
+  margin-bottom: 20px;
+}
+
 
 
