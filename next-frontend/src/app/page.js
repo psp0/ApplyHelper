@@ -8,14 +8,17 @@ const Home = () => {
   const [modalData, setModalData] = useState(null);
   const [houseName, setHouseName] = useState('');
   const [isKukMin, setIsKukMin] = useState(false);
+  const [loading, setLoading] = useState(true); // Add loading state
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const data = await fetchAPTData();
         setAptData(data);
+        setLoading(false); // Set loading to false after data is fetched
       } catch (error) {
         alert('Failed to fetch data');
+        setLoading(false); // Set loading to false if there's an error
       }
     };
 
@@ -36,42 +39,46 @@ const Home = () => {
 
   return (
     <div>
-      <table className="tbl_st">
-        <thead>
-          <tr>
-            <th>순서</th>
-            <th>지역</th>
-            <th>주택 구분</th>            
-            <th>주택명</th> 
-            <th>모집공고일</th>  
-            <th>일반공급 물량 및 경쟁률</th>
-          </tr>
-        </thead>
-        <tbody>
-          {aptData.data && aptData.data.length > 0 ? (
-            aptData.data.map((e, i) => (
-              <tr key={e.HOUSE_MANAGE_NO}>
-                <td>{i}</td>
-                <td>{e.HOUSE_DTL_SECD_NM}</td>
-                <td>{e.SUBSCRPT_AREA_CODE_NM}</td>
-                <td>{e.HOUSE_NM}</td>
-                <td>{e.RCRIT_PBLANC_DE}</td>
-                <td>
-                  <button type="button" onClick={() => handleButtonClick(e.DETAIL_DATA, e.HOUSE_DTL_SECD_NM, e.HOUSE_NM)}>물량</button>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr><td colSpan="6">데이터를 불러오는 중입니다</td></tr>
-          )}
-        </tbody>
-      </table>
+      {loading ? ( 
+        <div className="spinner"></div>
+      ) : (
+        <table className="tbl_st">
+          <thead>
+            <tr>
+              <th>순서</th>
+              <th>지역</th>
+              <th>주택 구분</th>            
+              <th>주택명</th> 
+              <th>모집공고일</th>  
+              <th>일반공급 물량 및 경쟁률</th>
+            </tr>
+          </thead>
+          <tbody>
+            {aptData.data && aptData.data.length > 0 ? (
+              aptData.data.map((e, i) => (
+                <tr key={e.HOUSE_MANAGE_NO}>
+                  <td>{i}</td>
+                  <td>{e.HOUSE_DTL_SECD_NM}</td>
+                  <td>{e.SUBSCRPT_AREA_CODE_NM}</td>
+                  <td>{e.HOUSE_NM}</td>
+                  <td>{e.RCRIT_PBLANC_DE}</td>
+                  <td>
+                    <button type="button" onClick={() => handleButtonClick(e.DETAIL_DATA, e.HOUSE_DTL_SECD_NM, e.HOUSE_NM)}>물량</button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr><td colSpan="6">데이터를 불러오는 중입니다</td></tr>
+            )}
+          </tbody>
+        </table>
+      )}
 
       {modalData && (
         <div className="modal">
           <div className="modal-content">
             <span className="close" onClick={closeModal}>&times;</span>
-            <h2 className="modal-title">{houseName}</h2> {/* Display housing name here */}
+            <h2 className="modal-title">{houseName}</h2>
             {modalData.map((item, index) => {
               const localData = item.LOCAL_POINT || item.LOCAL_RAND_ZERO || item.LOCAL_RAND_ZERO_ONE;
               const etcKYGData = item.ETC_KYG_POINT || item.ETC_KYG_RAND_ZERO || item.ETC_KYG_RAND_ZERO_ONE;
@@ -81,7 +88,7 @@ const Home = () => {
                   <table key={index}>
                     <tbody>
                       <tr>
-                        <th>타입</th>
+                        <th>주택형</th>
                         <th>가격</th>
                         <th>지역</th>
                         <th>구분</th>
@@ -102,7 +109,7 @@ const Home = () => {
                 <table key={index}>
                   <tbody>
                     <tr>
-                      <th>타입</th>
+                      <th>주택형</th>
                       <th>가격</th>
                       <th>총물량</th>
                       <th>지역</th>
