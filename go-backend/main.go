@@ -21,7 +21,7 @@ const (
 	externalSELAPTMainAPI   = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail?page=1&perPage=100&cond%%5BSUBSCRPT_AREA_CODE_NM%%3A%%3AEQ%%5D=%%EC%%84%%9C%%EC%%9A%%B8&cond%%5BRCRIT_PBLANC_DE%%3A%%3AGTE%%5D=%s&cond%%5BRCRIT_PBLANC_DE%%3A%%3ALT%%5D=%s"
 	externalKYGAPTMainAPI  = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail?page=1&perPage=100&cond%%5BSUBSCRPT_AREA_CODE_NM%%3A%%3AEQ%%5D=%%EC%%9D%%B8%%EC%%B2%%9C&cond%%5BRCRIT_PBLANC_DE%%3A%%3AGTE%%5D=%s&cond%%5BRCRIT_PBLANC_DE%%3A%%3ALT%%5D=%s"
 	externalINCAPTMainAPI  = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail?page=1&perPage=100&cond%%5BSUBSCRPT_AREA_CODE_NM%%3A%%3AEQ%%5D=%%EA%%B2%%BD%%EA%%B8%%B0&cond%%5BRCRIT_PBLANC_DE%%3A%%3AGTE%%5D=%s&cond%%5BRCRIT_PBLANC_DE%%3A%%3ALT%%5D=%s"
-	externalAPTDetailAPI = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancMdl?page=1&perPage=100&cond%5BHOUSE_MANAGE_NO%3A%3AEQ%5D="
+	externalAPTDetailAPI = "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancMdl?page=1&perPage=20&cond%5BHOUSE_MANAGE_NO%3A%3AEQ%5D="
 )
 
 type ApiResponse struct {
@@ -74,9 +74,16 @@ func getRemndrAPTData(w http.ResponseWriter, r *http.Request) {
 	
 }
 func getAPTData(w http.ResponseWriter, r *http.Request) {
+	//처리시간 계산
+	start := time.Now()
+	defer func() {
+		elapsed := time.Since(start)
+		log.Printf("Total Processing time: %s", elapsed)
+	}()
+		
 	serviceKey := os.Getenv("CHUNGYAK_INFO_API_KEY")
 	pages := 1 // Number of pages you want to go
-	startDate, endDate :=getDateRangeForPage(pages)		
+	startDate, endDate :=getDateRangeForPage(pages)			
 	selURL := fmt.Sprintf(externalSELAPTMainAPI+"&serviceKey=%s", startDate, endDate,serviceKey)
 	kygURL := fmt.Sprintf(externalKYGAPTMainAPI+"&serviceKey=%s", startDate, endDate,serviceKey)
 	incURL := fmt.Sprintf(externalINCAPTMainAPI+"&serviceKey=%s", startDate, endDate,serviceKey)
@@ -145,20 +152,29 @@ func getAPTData(w http.ResponseWriter, r *http.Request) {
 	sort.Slice(apiResponse.Data, func(i, j int) bool {
 		return apiResponse.Data[i].RcritPblancDe > apiResponse.Data[j].RcritPblancDe
 	})
-
+	log.Printf("First external Api processing time: %s", time.Since(start))
+	checkTime := time.Now()
 	for i, item := range apiResponse.Data {
 		detailURL := fmt.Sprintf("%s%s&serviceKey=%s", externalAPTDetailAPI, item.HouseManageNo, serviceKey)
-		if err := fetchDetailData(detailURL, &apiResponse.Data[i]); err != nil {
+		var detailResponse struct {
+			Data []DetailData `json:"data"`
+		}
+		if err := fetchDetailData(detailURL, &detailResponse); err != nil {
 			http.Error(w, "Failed to fetch detail data", http.StatusInternalServerError)
 			return
 		}
+		for _, detail := range detailResponse.Data {
+			apiResponse.Data[i].DetailData = append(apiResponse.Data[i].DetailData, processDetailData(&apiResponse.Data[i], detail))
+		}
 	}
-
+	log.Printf("Second external Api processing time: %s", time.Since(checkTime))
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(apiResponse)
 }
 
-func fetchDetailData(url string, mainData *MainData) error {
+func fetchDetailData(url string, detailResponse *struct {
+	Data []DetailData `json:"data"`
+}) error {
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
@@ -170,16 +186,10 @@ func fetchDetailData(url string, mainData *MainData) error {
 		return err
 	}
 
-	var detailResponse struct {
-		Data []DetailData `json:"data"`
-	}
-	if err := json.Unmarshal(body, &detailResponse); err != nil {
+	if err := json.Unmarshal(body, detailResponse); err != nil {
 		return err
 	}
-
-	for _, detail := range detailResponse.Data {
-		mainData.DetailData = append(mainData.DetailData, processDetailData(mainData, detail))
-	}
+	
 	return nil
 }
 
