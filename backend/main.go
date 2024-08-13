@@ -12,9 +12,15 @@ import (
 	"strconv"
 	"time"
 	"sort"
+	"context"
 
 	"github.com/gorilla/handlers"
 	"github.com/joho/godotenv"
+	"go.opentelemetry.io/otel"
+    "go.opentelemetry.io/otel/exporters/jaeger"
+    "go.opentelemetry.io/otel/sdk/resource"
+    sdktrace "go.opentelemetry.io/otel/sdk/trace"
+    semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 )
 
 const (
@@ -57,18 +63,64 @@ type DetailData struct {
 }
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
+	// Load the .env.local file
+	if err := godotenv.Load(".env.local"); err != nil {
+		log.Fatal("Error loading .env.local file")
 	}
 
-	http.HandleFunc("/getAPT", getAPTData)
-	http.HandleFunc("/getRemndrAPT", getRemndrAPTData)
+	// Initialize the tracer and ensure it shuts down gracefully
+	shutdown := initTracer()
+	defer shutdown()
+
+	// HTTP handlers with tracing
+	http.HandleFunc("/APT", traceMiddleware(getAPTData))
+	http.HandleFunc("/RemndrAPT", traceMiddleware(getRemndrAPTData))
+
+	// CORS configuration
 	corsHandler := handlers.CORS(
 		handlers.AllowedOrigins([]string{"*"}),
 		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
 		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
 	)
+
+	// Start the server with CORS and tracing enabled
 	log.Fatal(http.ListenAndServe(":8080", corsHandler(http.DefaultServeMux)))
+}
+func traceMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tracer := otel.Tracer("go-backend")
+		ctx, span := tracer.Start(r.Context(), r.URL.Path)
+		defer span.End()
+
+		// Pass the traced context to the next handler
+		next(w, r.WithContext(ctx))
+	}
+}
+
+func initTracer() func() {
+    // Create the Jaeger exporter    
+	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint("http://jaeger:14268/api/traces")))
+
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Create the tracer provider with the exporter
+    tp := sdktrace.NewTracerProvider(
+        sdktrace.WithBatcher(exporter),
+        sdktrace.WithResource(resource.NewWithAttributes(
+            semconv.SchemaURL,
+            semconv.ServiceName("go-backend"),
+        )),
+    )
+
+    otel.SetTracerProvider(tp)
+
+    return func() {
+        if err := tp.Shutdown(context.Background()); err != nil {
+            log.Fatal(err)
+        }
+    }
 }
 func getRemndrAPTData(w http.ResponseWriter, r *http.Request) {
 	

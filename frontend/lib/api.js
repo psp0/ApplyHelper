@@ -1,12 +1,11 @@
 import axios from 'axios';
 
 export const fetchAPTData = async () => {
-  const response = await axios.get(`http://localhost:8080/getAPT`);
+  const response = await axios.get(`/api/APT`);
   return response.data;
 };
 
-
 export const fetchRemndrAPTData = async () => {
-  const response = await axios.get(`http://localhost:8080/getRemndrAPT`);
+  const response = await axios.get(`/api/RemndrAPT`);
   return response.data;
 };

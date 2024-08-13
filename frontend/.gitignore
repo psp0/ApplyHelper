@@ -1,0 +1,38 @@
+# Node.js dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Testing
+/coverage
+
+# Next.js build artifacts
+/.next/
+/out/
+
+# Production build artifacts
+/build
+
+# Miscellaneous
+.DS_Store
+*.pem
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local environment files
+.env*.local
+.env
+
+# Vercel deployment
+.vercel
+
+# TypeScript build information
+*.tsbuildinfo
+next-env.d.ts
+
+# FUSE hidden files
+.fuse_hidden*

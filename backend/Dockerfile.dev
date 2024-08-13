@@ -1,0 +1,25 @@
+# for dev
+#golang
+# FROM golang:1.16.3-alpine3.13 AS builder
+# WORKDIR /go/src/github.com/chungYak/applyhelper/backend
+# COPY . .
+# RUN go mod download
+# RUN go build -o /go/bin/applyhelper
+
+# for dev
+#golang
+FROM golang:1.16.3-alpine3.13 AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+
+RUN go mod download
+
+COPY . .
+
+RUN go build -o main .
+
+EXPOSE 8090
+
+CMD ["./main"]

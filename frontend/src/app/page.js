@@ -8,17 +8,17 @@ const Home = () => {
   const [modalData, setModalData] = useState(null);
   const [houseName, setHouseName] = useState('');
   const [isKukMin, setIsKukMin] = useState(false);
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true); 
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const data = await fetchAPTData();
         setAptData(data);
-        setLoading(false); // Set loading to false after data is fetched
+        setLoading(false); 
       } catch (error) {
         alert('Failed to fetch data');
-        setLoading(false); // Set loading to false if there's an error
+        setLoading(false);
       }
     };
 
@@ -68,7 +68,7 @@ const Home = () => {
                 </tr>
               ))
             ) : (
-              <tr><td colSpan="6">데이터를 불러오는 중입니다</td></tr>
+              <tr><td colSpan="6">데이터가 없습니다</td></tr>
             )}
           </tbody>
         </table>
@@ -179,10 +179,9 @@ const Home = () => {
               <p className="highlight">
                 ※ 특별공급 미달 잔여물량은 포함안함
                 <br />
-                ※ 할당된 물량은 모두 가져간다고 가정
-                <br />
-                ※ 투기 과열지역에 대한 계산은 미구현
+                ※ 할당된 물량을 모두 가져갔다고 가정했을때의 결과                               
               </p>
+              {/*  ※ 투기 과열지역에 대한 계산은 미구현 */}
                {/* 만약 경쟁률 계산시 이를 고려해야함 */}
             {/* 데이터 안에 RceptEndde는 이 경쟁률인지 아닌지를 파악하는 용도로 사용됨 */}
             {/* 물량확인 버튼, 날짜 넘어가면 경쟁률 확인 버튼 */}
