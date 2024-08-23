@@ -13,6 +13,7 @@ import (
 	"time"
 	"sort"
 	"context"
+	"strings" 
 
 	"github.com/gorilla/handlers"
 	"github.com/joho/godotenv"
@@ -39,7 +40,8 @@ type MainData struct {
 	RcritPblancDe        string       `json:"RCRIT_PBLANC_DE"`
 	HouseDtlSecdNm       string       `json:"HOUSE_DTL_SECD_NM"`
 	SubscrptAreaCodeNm   string       `json:"SUBSCRPT_AREA_CODE_NM"`	
-	HouseNm              string       `json:"HOUSE_NM"`
+	HouseNm              string       `json:"HOUSE_NM"`	
+	HssplyAdres          string       `json:"HSSPLY_ADRES"`
 	RceptEndde           string       `json:"RCEPT_ENDDE"`
 	SpecltRdnEarthAt     string       `json:"SPECLT_RDN_EARTH_AT"`
 	LrsclBldlndAt        string       `json:"LRSCL_BLDLND_AT"`
@@ -51,6 +53,7 @@ type DetailData struct {
 	HouseTy          string `json:"HOUSE_TY"`
 	LttotTopAmount   string `json:"LTTOT_TOP_AMOUNT"`
 	SupplyHshldco    int    `json:"SUPLY_HSHLDCO"`
+	LocalKukMin	int`json:"LOCAL_KUKMIN"`
 	LocalPoint       int    `json:"LOCAL_POINT"`
 	LocalRandZero    int    `json:"LOCAL_RAND_ZERO"`
 	LocalRandZeroOne int    `json:"LOCAL_RAND_ZERO_ONE"`
@@ -226,7 +229,9 @@ func getAPTData(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, detail := range detailResponse.Data {
 			apiResponse.Data[i].DetailData = append(apiResponse.Data[i].DetailData, processDetailData(&apiResponse.Data[i], detail))
-		}
+		}		
+		extractedSubscrptAreaCodeNm := extractPlaceName(item.HssplyAdres,item.SubscrptAreaCodeNm)
+		apiResponse.Data[i].SubscrptAreaCodeNm = extractedSubscrptAreaCodeNm
 	}
 	log.Printf("Second external Api processing time: %s", time.Since(checkTime))
 	w.Header().Set("Content-Type", "application/json")
@@ -260,8 +265,13 @@ func processDetailData(mainData *MainData, detail DetailData) DetailData {
 	투기과열지구 := mainData.SpecltRdnEarthAt
 	대규모 := mainData.LrsclBldlndAt
 	수도권공공주택지구 := mainData.NplnPrvoprPublicHouseAt
+	주택상세구분:= mainData.HouseDtlSecdNm
 	타입 := detail.HouseTy
 	detail.LttotTopAmount = convertAndTrim(detail.LttotTopAmount)
+	if 주택상세구분 == "국민" {
+		detail.LocalKukMin = detail.SupplyHshldco
+		return detail
+	}
 	if 대규모 == "N" {
 		assignNonLargeScaleValues(수도권공공주택지구, 투기과열지구, 타입, 총물량, &detail)
 	}else{
@@ -426,4 +436,62 @@ func getDateRangeForPage(page int) (string, string) {
 	endDateStr := endDate.Format("2006-01-02")
 
 	return startDateStr, endDateStr
+}
+func extractPlaceName(adr string, areaCodeNm string) string {
+	words := strings.Fields(adr)
+
+	if len(words) < 2 {
+		return ""
+	}
+
+	firstWord := words[0]
+	secondWord := words[1]
+
+	// 경기도로 시작하는 경우
+	if  areaCodeNm == "경기" || strings.HasPrefix(firstWord, "경기도") {
+		// 두 번째 단어가 "시"로 끝나면
+		if strings.HasSuffix(secondWord, "시") {
+			placeName := strings.TrimSuffix(secondWord, "시")
+			// 세 번째 단어가 존재하고 "군", "구", "동" , "읍", "면"으로 끝나면 
+			if len(words) > 2 {
+				thirdWord := words[2]
+				if strings.HasSuffix(thirdWord, "군") || strings.HasSuffix(thirdWord, "구") || strings.HasSuffix(thirdWord, "동") || strings.HasSuffix(thirdWord, "읍")  || strings.HasSuffix(thirdWord, "면"){
+					return placeName + " " + thirdWord
+				}
+			}
+			// 세 번째 단어가 조건에 맞지 않는다면 
+			return placeName
+		}
+
+		// 두 번째 단어가 "군", "구"으로 끝나면
+		if strings.HasSuffix(secondWord, "군") {
+			placeName := strings.TrimSuffix(secondWord, "군")
+			return placeName
+		}
+	}	
+	// 첫 단어가 "~~도"로 끝나는 경우
+	if strings.HasSuffix(firstWord, "도") {
+		if strings.HasSuffix(secondWord, "시"){ 		
+			placeName := strings.TrimSuffix(secondWord, "시")
+			return areaCodeNm+ " "+ placeName
+		}
+		if  strings.HasSuffix(secondWord, "군") {
+			placeName := strings.TrimSuffix(secondWord, "군")
+			return areaCodeNm+ " "+ placeName
+		}
+		if strings.HasSuffix(secondWord, "구") {
+			placeName := strings.TrimSuffix(secondWord, "구")
+			return areaCodeNm+ " "+ placeName
+		}
+	}
+
+	// 첫 단어가 "~~시"로 끝나는 경우 부천시 서구
+	if strings.HasSuffix(firstWord, "시") {
+		if strings.HasSuffix(secondWord, "군") || strings.HasSuffix(secondWord, "구") || strings.HasSuffix(secondWord, "동") {
+			return areaCodeNm+ " "+ secondWord
+		}
+	}
+
+	// 조건에 맞지 않는 경우 빈 문자열 반환
+	return ""
 }
