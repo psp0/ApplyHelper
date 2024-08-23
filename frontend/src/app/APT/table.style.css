@@ -1,0 +1,36 @@
+.tbl_st {
+    width: 100%;    
+    border-collapse: collapse;
+    margin: 20px 0;
+    background-color: white;
+  }
+  
+  .tbl_st th,
+  .tbl_st td {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+  }
+  
+  .tbl_st th {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .tbl_st tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+  
+  .tbl_st button {
+    padding: 5px 10px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  
+  .tbl_st button:hover {
+    background-color: #218838;
+  }
+  
