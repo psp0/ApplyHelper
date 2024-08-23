@@ -143,7 +143,7 @@ func getAPTData(w http.ResponseWriter, r *http.Request) {
 	}()
 		
 	serviceKey := os.Getenv("CHUNGYAK_INFO_API_KEY")
-	pages := 1 // Number of pages you want to go
+	pages, err := strconv.Atoi(r.URL.Query().Get("page"))
 	startDate, endDate :=getDateRangeForPage(pages)			
 	selURL := fmt.Sprintf(externalSELAPTMainAPI+"&serviceKey=%s", startDate, endDate,serviceKey)
 	kygURL := fmt.Sprintf(externalKYGAPTMainAPI+"&serviceKey=%s", startDate, endDate,serviceKey)
