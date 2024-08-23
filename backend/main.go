@@ -63,10 +63,18 @@ type DetailData struct {
 }
 
 func main() {
-	// Load the .env.local file
-	if err := godotenv.Load(".env.local"); err != nil {
-		log.Fatal("Error loading .env.local file")
-	}
+	env := os.Getenv("APP_ENV")
+	var port string
+	if env == "production" {
+		port = "8080"
+		if err := godotenv.Load(".env.production"); err != nil {
+			log.Fatal("Error loading .env.production file")
+		}
+	} else {
+		port = "8090"
+		if err := godotenv.Load(".env.local"); err != nil {
+			log.Fatal("Error loading .env.local file")
+		}}
 
 	// Initialize the tracer and ensure it shuts down gracefully
 	shutdown := initTracer()
@@ -84,7 +92,8 @@ func main() {
 	)
 
 	// Start the server with CORS and tracing enabled
-	log.Fatal(http.ListenAndServe(":8080", corsHandler(http.DefaultServeMux)))
+	fmt.Printf("Running in %s environment on port %s\n", env, port)	
+	log.Fatal(http.ListenAndServe(":"+port, corsHandler(http.DefaultServeMux)))
 }
 func traceMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
