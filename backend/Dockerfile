@@ -16,8 +16,9 @@ COPY . .
 # Build the Go application
 RUN go build -o main .
 
-# Set the environment variable for the API key (this is optional, you can also set it directly in your code)
-# ENV CHUNGYAK_INFO_API_KEY  
+ENV GO_ENV=production
+
+ENV PORT=8080
 
 # Expose port 8080 to the outside world
 EXPOSE 8080
