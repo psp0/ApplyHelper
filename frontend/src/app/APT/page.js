@@ -11,7 +11,7 @@ import '../spinner.style.css'
 import { fetchAPTData } from '../../../lib/api';
 import { fetchdevAPTData } from '../../../lib/dev-api';
 
-const Home = () => {
+const APT = () => {
   const [aptData, setAptData] = useState({ data: [] });
   const [modalData, setModalData] = useState(null);
   const [houseName, setHouseName] = useState('');
@@ -36,6 +36,7 @@ const Home = () => {
         } else {
           // Stop fetching more data if no data is returned
           setIsFetching(false);
+          setLoading(false); // Add this line to stop the loading spinner
           return;
         }
         
@@ -104,4 +105,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default APT;

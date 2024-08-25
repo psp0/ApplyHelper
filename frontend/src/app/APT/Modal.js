@@ -50,11 +50,11 @@ const Modal = ({ modalData, houseDtlSecdNm, houseName, closeModal }) => {
                     {localData > 0 && (
                       <>
                         <tr>
-                          <td>랜덤 - 무주택</td>
+                          <td>무작위 (무주택자)</td>
                           <td>{item.LOCAL_RAND_ZERO}</td>
                         </tr>
                         <tr>
-                          <td>랜덤 - 무주택,일주택</td>
+                          <td>무작위 (무주택 + 1주택자)</td>
                           <td>{item.LOCAL_RAND_ZERO_ONE}</td>
                         </tr>
                       </>
@@ -62,16 +62,16 @@ const Modal = ({ modalData, houseDtlSecdNm, houseName, closeModal }) => {
                     {etcKYGData > 0 && (
                       <>
                         <tr>
-                          <td rowSpan="3">해당, 기타경기</td>
+                          <td rowSpan="3">해당 + 기타경기</td>
                           <td>高가점자</td>
                           <td>{item.ETC_KYG_POINT}</td>
                         </tr>
                         <tr>
-                          <td>랜덤 - 무주택</td>
+                          <td>무작위 (무주택자)</td>
                           <td>{item.ETC_KYG_RAND_ZERO}</td>
                         </tr>
                         <tr>
-                          <td>랜덤 - 무주택,일주택</td>
+                          <td>무작위 (무주택 + 1주택자)</td>
                           <td>{item.ETC_KYG_RAND_ZERO_ONE}</td>
                         </tr>
                       </>
@@ -79,17 +79,17 @@ const Modal = ({ modalData, houseDtlSecdNm, houseName, closeModal }) => {
                     {etcData > 0 && (
                       <>
                         <tr>
-                          {etcKYGData > 0 && <td rowSpan="3">해당, 기타경기, 기타</td>}
-                          {etcKYGData <= 0 && <td rowSpan="3">해당, 기타</td>}
+                          {etcKYGData > 0 && <td rowSpan="3">해당 + 기타경기 + 기타</td>}
+                          {etcKYGData <= 0 && <td rowSpan="3">해당 + 기타</td>}
                           <td>高가점자</td>
                           <td>{item.ETC_POINT}</td>
                         </tr>
                         <tr>
-                          <td>랜덤 - 무주택</td>
+                          <td>무작위 (무주택자)</td>
                           <td>{item.ETC_RAND_ZERO}</td>
                         </tr>
                         <tr>
-                          <td>랜덤 - 무주택,일주택</td>
+                          <td>무작위 (무주택 + 1주택자)</td>
                           <td>{item.ETC_RAND_ZERO_ONE}</td>
                         </tr>
                       </>
