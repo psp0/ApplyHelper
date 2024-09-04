@@ -1,0 +1,32 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build and push Docker backend image
+        run: |
+          TAG=$(date +%s)
+          docker build ./backend --file ./backend/Dockerfile --tag psp0/applyhelper_backend:$TAG
+          docker tag psp0/applyhelper_backend:$TAG psp0/applyhelper_backend:latest
+          docker push psp0/applyhelper_backend:$TAG
+          docker push psp0/applyhelper_backend:latest
+
+      - name: Build and push Docker frontend image
+        run: |
+          TAG=$(date +%s)
+          docker build ./frontend --file ./frontend/Dockerfile --tag psp0/applyhelper_frontend:$TAG
+          docker tag psp0/applyhelper_frontend:$TAG psp0/applyhelper_frontend:latest
+          docker push psp0/applyhelper_frontend:$TAG
+          docker push psp0/applyhelper_frontend:latest
