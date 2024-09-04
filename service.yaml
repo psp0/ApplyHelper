@@ -10,7 +10,7 @@ spec:
     - protocol: TCP
       port: 8080
       targetPort: 8080
-      nodePort: 30808
+      nodePort: 30080
   type: NodePort
 
 ---
@@ -24,7 +24,7 @@ spec:
     app: frontend
   ports:
     - protocol: TCP
-      port: 3000
-      targetPort: 3000      
-      nodePort: 30300
+      port: 80
+      targetPort: 80
+      nodePort: 30000
   type: NodePort
