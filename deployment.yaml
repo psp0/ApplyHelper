@@ -14,10 +14,10 @@ spec:
         app: backend
     spec:
       containers:
-      - name: backend
-        image: psp0/applyhelper_backend:latest
-        ports:
-        - containerPort: 8080
+        - name: backend
+          image: psp0/applyhelper_backend:latest
+          ports:
+            - containerPort: 8080
 
 ---
 # frontend-deployment.yaml
@@ -26,7 +26,6 @@ kind: Deployment
 metadata:
   name: frontend-deployment
 spec:
-
   replicas: 3
   selector:
     matchLabels:
@@ -37,9 +36,7 @@ spec:
         app: frontend
     spec:
       containers:
-      - name: frontend
-        image: psp0/applyhelper_frontend:latest
-        ports:
-        - containerPort: 3000       
-          
-        
+        - name: frontend
+          image: psp0/applyhelper_frontend:latest
+          ports:
+            - containerPort: 80

@@ -66,18 +66,23 @@ type DetailData struct {
 }
 
 func main() {
-	env := os.Getenv("APP_ENV")
-	var port string
-	if env == "production" {
-		port = "8080"
-		if err := godotenv.Load(".env.production"); err != nil {
-			log.Fatal("Error loading .env.production file")
-		}
-	} else {
-		port = "8090"
-		if err := godotenv.Load(".env.local"); err != nil {
-			log.Fatal("Error loading .env.local file")
-		}}
+	env := os.Getenv("GO_ENV")
+
+	var err error
+	if env == "" {
+		env = "development"
+		err = godotenv.Load(".env.development")
+	}
+	err = godotenv.Load(".env.local")
+
+	if err != nil {
+		log.Fatalf("Error loading environment file: %v", err)
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3010"
+	}
 
 	// Initialize the tracer and ensure it shuts down gracefully
 	shutdown := initTracer()
