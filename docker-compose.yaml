@@ -1,10 +1,9 @@
-version: '3.8'
+version: "3.8"
 
 services:
   backend:
-    build:
-      context: ./backend
-    container_name: backend  
+    image: psp0/applyhelper_backend:latest
+    container_name: backend
     networks:
       - applyhelper-network
     environment:
@@ -14,8 +13,7 @@ services:
       - "8080:8080"
 
   frontend:
-    build:
-      context: ./frontend
+    image: psp0/applyhelper_frontend:latest
     container_name: frontend
     ports:
       - "80:80"
@@ -26,7 +24,6 @@ services:
     environment:
       - JAEGER_AGENT_HOST=jaeger
       - JAEGER_AGENT_PORT=6831
-
 
   jaeger:
     image: jaegertracing/all-in-one:latest
