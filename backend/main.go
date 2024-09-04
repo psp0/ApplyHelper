@@ -449,7 +449,7 @@ func extractPlaceName(adr string, areaCodeNm string) string {
 				}
 			}
 			// 세 번째 단어가 조건에 맞지 않는다면 
-			return placeName
+			return "경기" + placeName
 		}
 
 		// 두 번째 단어가 "군", "구"으로 끝나면
