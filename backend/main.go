@@ -143,87 +143,67 @@ func getRemndrAPTData(w http.ResponseWriter, r *http.Request) {
 	
 }
 func getAPTData(w http.ResponseWriter, r *http.Request) {
-	//처리시간 계산
-	start := time.Now()
-	defer func() {
-		elapsed := time.Since(start)
-		log.Printf("Total Processing time: %s", elapsed)
-	}()
-		
-	serviceKey := os.Getenv("CHUNGYAK_INFO_API_KEY")
-	pages, err := strconv.Atoi(r.URL.Query().Get("page"))
-	startDate, endDate :=getDateRangeForPage(pages)			
-	selURL := fmt.Sprintf(externalSELAPTMainAPI+"&serviceKey=%s", startDate, endDate,serviceKey)
-	kygURL := fmt.Sprintf(externalKYGAPTMainAPI+"&serviceKey=%s", startDate, endDate,serviceKey)
-	incURL := fmt.Sprintf(externalINCAPTMainAPI+"&serviceKey=%s", startDate, endDate,serviceKey)
-	
-	selResp, err := http.Get(selURL)
-	if err != nil {
-		http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
-		return
-	}
-	defer selResp.Body.Close()
+    // 처리시간 계산
+    start := time.Now()
+    defer func() {
+        elapsed := time.Since(start)
+        log.Printf("Total Processing time: %s", elapsed)
+    }()
 
-	kygResp, err := http.Get(kygURL)
-	if err != nil {
-		http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
-		return
-	}
-	defer kygResp.Body.Close()
+    serviceKey := os.Getenv("CHUNGYAK_INFO_API_KEY")
+    pages, err := strconv.Atoi(r.URL.Query().Get("page"))
+    if err != nil {
+        http.Error(w, "Invalid page parameter", http.StatusBadRequest)
+        return
+    }
 
-	incResp, err := http.Get(incURL)
-	if err != nil {
-		http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
-		return
-	}
-	defer incResp.Body.Close()
+    startDate, endDate := getDateRangeForPage(pages)    
+    selURL := fmt.Sprintf(externalSELAPTMainAPI+"&serviceKey=%s", startDate, endDate, serviceKey)
+    kygURL := fmt.Sprintf(externalKYGAPTMainAPI+"&serviceKey=%s", startDate, endDate, serviceKey)
+    incURL := fmt.Sprintf(externalINCAPTMainAPI+"&serviceKey=%s", startDate, endDate, serviceKey)
+    apiURLs := []string{selURL, kygURL, incURL}
+    var combinedData []MainData
 
-	selBody, err := ioutil.ReadAll(selResp.Body)
-	if err != nil {
-		http.Error(w, "Failed to read response body", http.StatusInternalServerError)
-		return
-	}
+    for _, url := range apiURLs {
+        resp, err := http.Get(url)
+        if err != nil {
+            http.Error(w, "Failed to fetch data from external API", http.StatusInternalServerError)
+            return
+        }
+        defer resp.Body.Close()
 
-	kygBody, err := ioutil.ReadAll(kygResp.Body)
-	if err != nil {
-		http.Error(w, "Failed to read response body", http.StatusInternalServerError)
-		return
-	}
+        body, err := ioutil.ReadAll(resp.Body)
+        if err != nil {
+            http.Error(w, "Failed to read response body", http.StatusInternalServerError)
+            return
+        }
 
-	incBody, err := ioutil.ReadAll(incResp.Body)
-	if err != nil {
-		http.Error(w, "Failed to read response body", http.StatusInternalServerError)
-		return
-	}	
+        // Check for error in the response
+        if resp.StatusCode != http.StatusOK {
+            var errResponse map[string]interface{}
+            if err := json.Unmarshal(body, &errResponse); err == nil {
+                if code, exists := errResponse["code"]; exists {
+                    http.Error(w, fmt.Sprintf("API Error: %v - %v", code, errResponse["msg"]), http.StatusBadGateway)
+                    return
+                }
+            } else {
+                http.Error(w, "Failed to parse error response", http.StatusInternalServerError)
+                return
+            }
+        }
 
-	var selApiResponse ApiResponse
-	if err := json.Unmarshal(selBody, &selApiResponse); err != nil {
-		http.Error(w, "Failed to parse JSON", http.StatusInternalServerError)
-		return
-	}
+        // Unmarshal each response individually
+        var apiResponse ApiResponse
+        if err := json.Unmarshal(body, &apiResponse); err != nil {
+            http.Error(w, "Failed to parse JSON", http.StatusInternalServerError)
+            log.Printf("Failed to parse JSON from URL: %s, Error: %v", url, err)
+            return
+        }
 
-	var kygApiResponse ApiResponse
-	if err := json.Unmarshal(kygBody, &kygApiResponse); err != nil {
-		http.Error(w, "Failed to parse JSON", http.StatusInternalServerError)
-		return
-	}
-
-	var incApiResponse ApiResponse
-	if err := json.Unmarshal(incBody, &incApiResponse); err != nil {
-		http.Error(w, "Failed to parse JSON", http.StatusInternalServerError)
-		return
-	}
-
-	var apiResponse ApiResponse
-	apiResponse.Data = append(apiResponse.Data, selApiResponse.Data...)
-	apiResponse.Data = append(apiResponse.Data, kygApiResponse.Data...)
-	apiResponse.Data = append(apiResponse.Data, incApiResponse.Data...)
-	sort.Slice(apiResponse.Data, func(i, j int) bool {
-		return apiResponse.Data[i].RcritPblancDe > apiResponse.Data[j].RcritPblancDe
-	})
-	log.Printf("First external Api processing time: %s", time.Since(start))
-	checkTime := time.Now()
-	for i, item := range apiResponse.Data {
+        // Combine data
+        combinedData = append(combinedData, apiResponse.Data...)
+    }
+	for i, item := range combinedData {
 		detailURL := fmt.Sprintf("%s%s&serviceKey=%s", externalAPTDetailAPI, item.HouseManageNo, serviceKey)
 		var detailResponse struct {
 			Data []DetailData `json:"data"`
@@ -233,16 +213,20 @@ func getAPTData(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, detail := range detailResponse.Data {
-			apiResponse.Data[i].DetailData = append(apiResponse.Data[i].DetailData, processDetailData(&apiResponse.Data[i], detail))
+			combinedData[i].DetailData = append(combinedData[i].DetailData, processDetailData(&combinedData[i], detail))
 		}		
 		extractedSubscrptAreaCodeNm := extractPlaceName(item.HssplyAdres,item.SubscrptAreaCodeNm)
-		apiResponse.Data[i].SubscrptAreaCodeNm = extractedSubscrptAreaCodeNm
+		combinedData[i].SubscrptAreaCodeNm = extractedSubscrptAreaCodeNm
 	}
-	log.Printf("Second external Api processing time: %s", time.Since(checkTime))
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(apiResponse)
-}
+    // Sort combinedData by RcritPblancDe in descending order
+    sort.Slice(combinedData, func(i, j int) bool {
+        return combinedData[i].RcritPblancDe > combinedData[j].RcritPblancDe
+    })
 
+    // Return the combined and sorted data
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(ApiResponse{Data: combinedData})
+}
 func fetchDetailData(url string, detailResponse *struct {
 	Data []DetailData `json:"data"`
 }) error {
