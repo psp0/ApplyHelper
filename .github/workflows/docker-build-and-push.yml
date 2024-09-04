@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Build and Push Docker Image
 
 on:
   push:
@@ -16,9 +16,12 @@ jobs:
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build and push Docker backend image
+        env:
+          CHUNGYAK_INFO_API_KEY: ${{ secrets.CHUNGYAK_INFO_API_KEY }} # Pass the API key as an environment variable
         run: |
+          echo "CHUNGYAK_INFO_API_KEY=${{ secrets.CHUNGYAK_INFO_API_KEY }}" > ./backend/.env.local   
           TAG=$(date +%s)
-          docker build ./backend --file ./backend/Dockerfile --tag psp0/applyhelper_backend:$TAG
+          docker build --build-arg CHUNGYAK_INFO_API_KEY="${{ secrets.CHUNGYAK_INFO_API_KEY }}" ./backend --file ./backend/Dockerfile --tag psp0/applyhelper_backend:$TAG          
           docker tag psp0/applyhelper_backend:$TAG psp0/applyhelper_backend:latest
           docker push psp0/applyhelper_backend:$TAG
           docker push psp0/applyhelper_backend:latest
