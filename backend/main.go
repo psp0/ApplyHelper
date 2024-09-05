@@ -64,26 +64,7 @@ type DetailData struct {
 	EtcRandZero      int    `json:"ETC_RAND_ZERO"`
 	EtcRandZeroOne   int    `json:"ETC_RAND_ZERO_ONE"`
 }
-
 func main() {
-	env := os.Getenv("GO_ENV")
-
-	var err error
-	if env == "" {
-		env = "development"
-		err = godotenv.Load(".env.development")
-	}
-	err = godotenv.Load(".env.local")
-
-	if err != nil {
-		log.Fatalf("Error loading environment file: %v", err)
-	}
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3010"
-	}
-
 	// Initialize the tracer and ensure it shuts down gracefully
 	shutdown := initTracer()
 	defer shutdown()
@@ -99,8 +80,19 @@ func main() {
 		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
 	)
 
-	// Start the server with CORS and tracing enabled
-	fmt.Printf("Running in %s environment on port %s\n", env, port)	
+	env := os.Getenv("GO_ENV")
+	port := os.Getenv("PORT")
+	if env == "" || port == "" {
+		env = "development"
+		port = "3010"
+	}
+	
+	err := godotenv.Load(".env." + env)
+	err = godotenv.Load(".env.local")
+	if err != nil {
+		log.Fatalf("Error loading environment file: %v", err)
+	}
+	fmt.Printf("Starting server in %s environment on port %s\n", env, port)   
 	log.Fatal(http.ListenAndServe(":"+port, corsHandler(http.DefaultServeMux)))
 }
 func traceMiddleware(next http.HandlerFunc) http.HandlerFunc {
