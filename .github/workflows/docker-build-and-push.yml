@@ -19,7 +19,6 @@ jobs:
         env:
           CHUNGYAK_INFO_API_KEY: ${{ secrets.CHUNGYAK_INFO_API_KEY }} # Pass the API key as an environment variable
         run: |
-          echo "CHUNGYAK_INFO_API_KEY=${{ secrets.CHUNGYAK_INFO_API_KEY }}" > ./backend/.env.local   
           TAG=$(date +%s)
           docker build --build-arg CHUNGYAK_INFO_API_KEY="${{ secrets.CHUNGYAK_INFO_API_KEY }}" ./backend --file ./backend/Dockerfile --tag psp0/applyhelper_backend:$TAG          
           docker tag psp0/applyhelper_backend:$TAG psp0/applyhelper_backend:latest

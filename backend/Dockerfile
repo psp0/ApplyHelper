@@ -13,11 +13,16 @@ RUN go mod download
 # Copy the source code to the workspace
 COPY . .
 
+# Build-time variable for API key (from GitHub Actions)
+ARG CHUNGYAK_INFO_API_KEY
+
+# Create the .env.local file in the Docker image
+RUN echo "CHUNGYAK_INFO_API_KEY=$CHUNGYAK_INFO_API_KEY" > .env.local
+
 # Build the Go application
 RUN go build -o main .
 
 ENV GO_ENV=production
-
 ENV PORT=8080
 
 # Expose port 8080 to the outside world
