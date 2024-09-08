@@ -88,9 +88,11 @@ func main() {
 	}
 	
 	err := godotenv.Load(".env." + env)
-	err = godotenv.Load(".env.local")
-	if err != nil {
-		log.Fatalf("Error loading environment file: %v", err)
+	if env != "production" {
+		err = godotenv.Load(".env.local")
+		if err != nil {
+			log.Printf("Warning: Could not load .env.local file: %v", err)
+		}
 	}
 	fmt.Printf("Starting server in %s environment on port %s\n", env, port)   
 	log.Fatal(http.ListenAndServe(":"+port, corsHandler(http.DefaultServeMux)))

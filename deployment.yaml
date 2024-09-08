@@ -18,6 +18,12 @@ spec:
           image: psp0/applyhelper_backend:latest
           ports:
             - containerPort: 8080
+          env:
+            - name: CHUNGYAK_INFO_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: chungyak-info-api-key
+                  key: CHUNGYAK_INFO_API_KEY
 
 ---
 # frontend-deployment.yaml

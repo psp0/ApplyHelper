@@ -7,6 +7,7 @@ services:
     networks:
       - applyhelper-network
     environment:
+      - CHUNGYAK_INFO_API_KEY=${CHUNGYAK_INFO_API_KEY}
       - JAEGER_AGENT_HOST=jaeger
       - JAEGER_AGENT_PORT=6831
     ports:
