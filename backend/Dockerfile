@@ -17,7 +17,6 @@ COPY . .
 RUN go build -o main .
 
 ENV GO_ENV=production
-
 ENV PORT=8080
 
 # Expose port 8080 to the outside world
